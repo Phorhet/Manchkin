@@ -1,0 +1,186 @@
+import pygame
+import random
+import sys
+
+pygame.init()
+
+# Константы для экрана
+WIDTH, HEIGHT = 800, 600
+FPS = 60
+
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+
+font = pygame.font.Font(None, 24)
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Карточная игра")
+
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.level = 1
+        self.health = 100
+        self.hand = []
+        self.cards_played = []
+
+    def draw_card(self):
+        card = random.choice(["Monster", "Item"])
+        self.hand.append(card)
+
+    def use_card(self, card_index):
+        card = self.hand.pop(card_index)
+        self.cards_played.append(card)
+        return card
+
+    def attack(self, other_player):
+        damage = random.randint(5, 20)
+        other_player.health -= damage
+        return damage
+
+    def heal(self):
+        heal_amount = random.randint(10, 30)
+        self.health += heal_amount
+        return heal_amount
+
+
+class Game:
+    def __init__(self):
+        self.players = [Player("Игрок 1"), Player("Игрок 2")]
+        self.current_player_index = 0
+        self.phase = "Draw Card"  # Текущая фаза игры
+        self.game_over = False
+        self.paused = False
+        self.message = ""
+
+    def switch_player(self):
+        self.current_player_index = (self.current_player_index + 1) % 2
+
+    def get_current_player(self):
+        return self.players[self.current_player_index]
+
+    def get_opponent(self):
+        return self.players[(self.current_player_index + 1) % 2]
+
+    def draw_phase(self):
+        current_player = self.get_current_player()
+        current_player.draw_card()
+
+    def battle_phase(self, card_index):
+        current_player = self.get_current_player()
+        opponent = self.get_opponent()
+
+        card = current_player.use_card(card_index)
+
+        if card == "Monster":
+            damage = current_player.attack(opponent)
+            self.message = f"{current_player.name} атакует {opponent.name} на {damage} урона!"
+        elif card == "Item":
+            heal = current_player.heal()
+            self.message = f"{current_player.name} лечит себя на {heal} здоровья!"
+
+        if opponent.health <= 0:
+            self.game_over = True
+            self.message += f" {opponent.name} проиграл!"
+
+    def next_phase(self):
+        if self.phase == "Draw Card":
+            self.phase = "Battle Phase"
+        elif self.phase == "Battle Phase":
+            self.phase = "End Turn"
+
+    def end_turn(self):
+        self.phase = "Draw Card"
+        self.switch_player()
+        self.message = ""
+
+def draw_button(text, x, y, width, height):
+    pygame.draw.rect(screen, GREEN, (x, y, width, height))
+    button_text = font.render(text, True, BLACK)
+    text_rect = button_text.get_rect(center=(x + width // 2, y + height // 2))
+    screen.blit(button_text, text_rect)
+
+def main():
+    game = Game()
+    clock = pygame.time.Clock()
+
+    while not game.game_over:
+        screen.fill(WHITE)
+
+        # обработка действия - события
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                game.game_over = True
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:  # Нажатие 'P' для паузы
+                    game.paused = not game.paused
+
+            if not game.paused:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_x, mouse_y = event.pos
+
+                    # нижатие кнопок
+                    if game.phase == "Draw Card" and (50 <= mouse_x <= 250) and (500 <= mouse_y <= 550):
+                        game.draw_phase()
+                        game.next_phase()
+                    elif game.phase == "Battle Phase":
+                        current_player = game.get_current_player()
+                        if current_player.hand:
+                            # атака перовй картой 
+                            if (300 <= mouse_x <= 500) and (500 <= mouse_y <= 550):
+                                game.battle_phase(0)  # Используем первую карту в руке
+                                game.end_turn()
+                            # лечить себя
+                            elif (550 <= mouse_x <= 750) and (500 <= mouse_y <= 550):
+                                if current_player.hand:
+                                    game.battle_phase(1)  # Используем вторую карту в руке (если есть)
+                                    game.end_turn()
+
+        if not game.paused:
+            # состояние игроков 
+            current_player = game.get_current_player()
+            opponent = game.get_opponent()
+
+            player_info = font.render(
+                f"{current_player.name} - Уровень: {current_player.level} Здоровье: {current_player.health}",
+                True, BLACK)
+            screen.blit(player_info, (20, 20))
+
+            opponent_info = font.render(
+                f"{opponent.name} - Уровень: {opponent.level} Здоровье: {opponent.health}", True,
+                BLACK)
+            screen.blit(opponent_info, (20, 60))
+
+            # фаза - часть игры
+            phase_info = font.render(f"Текущая фаза: {game.phase}", True, BLACK)
+            screen.blit(phase_info, (WIDTH - 250, 20))
+
+            # карты другого игрока 
+            hand_info = font.render(f"Карты в руке: {', '.join(current_player.hand)}", True, BLACK)
+            screen.blit(hand_info, (20, HEIGHT - 50))
+
+            # сообщения
+            message_info = font.render(game.message, True, RED)
+            screen.blit(message_info, (20, HEIGHT - 100))
+
+            # кнопки
+            draw_button("Нарисовать карту", 50, 500, 200, 50)
+            draw_button("Атаковать", 300, 500, 200, 50)
+            draw_button("Лечить", 550, 500, 200, 50)
+
+        else:
+            pause_message = font.render("Игра на паузе. Нажмите 'P' для продолжения.", True, RED)
+            screen.blit(pause_message, (WIDTH // 2 - pause_message.get_width() // 2, HEIGHT // 2))
+
+            # обновление экрана
+        pygame.display.flip()
+        clock.tick(FPS)
+
+    pygame.quit()
+    sys.exit()
+
+
+if __name__ == "__main__":
+    main()
