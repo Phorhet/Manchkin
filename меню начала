@@ -1,0 +1,103 @@
+import pygame
+import sys
+
+pygame.init()
+
+WIDTH, HEIGHT = 800, 600
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+
+dungeon_bg = pygame.image.load("dungeon_background.png")
+table_image = pygame.image.load("table.png")
+deck_image = pygame.image.load("deck.png")
+paper_image = pygame.image.load("paper.png")
+hand_image = pygame.image.load("hand.png")
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Dungeon Card Game")
+
+def draw_table():
+    screen.blit(table_image, (WIDTH//2 - table_image.get_width()//2, HEIGHT//2 - table_image.get_height()//2))
+    screen.blit(deck_image, (WIDTH//2 - 200, HEIGHT//2))
+    screen.blit(deck_image, (WIDTH//2 + 50, HEIGHT//2))
+    screen.blit(paper_image, (WIDTH//2 - 50, HEIGHT//2 - 50))
+    screen.blit(paper_image, (WIDTH//2 + 200, HEIGHT//2 + 50))
+    screen.blit(hand_image, (WIDTH//2 - 50, HEIGHT//2 + 100))
+
+def draw_menu():
+    screen.fill(WHITE)
+    font = pygame.font.Font(None, 74)
+    title_text = font.render("Dungeon Card Game", True, GREEN)
+    screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 4))
+
+    button_font = pygame.font.Font(None, 48)
+    start_button = button_font.render("Начать игру", True, GREEN)
+    rules_button = button_font.render("Правила", True, GREEN)
+    exit_button = button_font.render("Выход", True, GREEN)
+
+    screen.blit(start_button, (WIDTH // 2 - start_button.get_width() // 2, HEIGHT // 2))
+    screen.blit(rules_button, (WIDTH // 2 - rules_button.get_width() // 2, HEIGHT // 2 + 60))
+    screen.blit(exit_button, (WIDTH // 2 - exit_button.get_width() // 2, HEIGHT // 2 + 120))
+
+def draw_rules():
+    screen.fill(WHITE)
+    font = pygame.font.Font(None, 36)
+    rules_text = [
+        "Правила игры:",
+        "1. Игроки берут карты.",
+        "2. Сражаются с монстрами.",
+        "3. Зарабатывают очки.",
+        "4. Побеждает тот, кто первым достигнет 10 очков.",
+        "",
+        "Нажмите любую клавишу для возврата в меню."
+    ]
+
+    for i, line in enumerate(rules_text):
+        text_surface = font.render(line, True, GREEN)
+        screen.blit(text_surface, (20, 20 + i * 30))
+
+def main_menu():
+    while True:
+        draw_menu()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = event.pos
+                if WIDTH // 2 - 100 < mouse_x < WIDTH // 2 + 100:
+                    if HEIGHT // 2 < mouse_y < HEIGHT // 2 + 50:
+                        game_loop()  # Начать игру
+                    elif HEIGHT // 2 + 60 < mouse_y < HEIGHT // 2 + 110:
+                        show_rules()  # Показать правила
+                    elif HEIGHT // 2 + 120 < mouse_y < HEIGHT // 2 + 170:
+                        pygame.quit()
+                        sys.exit()
+
+        pygame.display.flip()
+
+def show_rules():
+    while True:
+        draw_rules()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                return  # Вернуться в главное меню
+
+        pygame.display.flip()
+
+def game_loop():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        screen.blit(dungeon_bg, (0, 0))
+        draw_table()
+        pygame.display.flip()
+
+if __name__ == "__main__":
+    main_menu()
