@@ -7,7 +7,7 @@ class Player:
         self.equipped_items = {}  # Снаряжение (оружие, броня и т.п.)
         self.class_race = None  # Класс и раса персонажа
         self.status_effects = set()  # Эффекты, наложенные на игрока (например, проклятия)
-        self.falllevel = False  # Признак отката по уровню игрока
+        self.falllevel = False  # Признак потери уровня игроком
 
     def draw_card(self, deck):
         """Достает карту из колоды."""
@@ -29,15 +29,10 @@ class Player:
             self.backup()
 
     def backup(self):
-        """Обработка смерти игрока."""
+        """Обработка потери уровня игроком."""
         self.falllevel = True
-        print(f"{self.name} умер!")
+        print(f"{self.name} потеря уровня!")
 
-    def heal(self, healing):
-        """Восстанавливает здоровье игрока."""
-        self.health += healing
-        if self.health > 10:
-            self.health = 10
 
     def equip_item(self, item):
         """Оборудование предмета."""
@@ -86,6 +81,10 @@ class Player:
         equipped_items_str = ', '.join([f'{k}: {v}' for k, v in self.equipped_items.items()])
         status_effects_str = ', '.join(self.status_effects)
         return f'Имя: {self.name}\n' \
+               f'Уровень: {self.level}\n' \
+               f'Рука: {len(self.hand)} карт\n' \
+               f'Экипировка: {equipped_items_str}\n' \
+               f'Эффекты: {status_effects_str}'
                f'Уровень: {self.level}\n' \
                f'Здоровье: {self.health}\n' \
                f'Рука: {len(self.hand)} карт\n' \
