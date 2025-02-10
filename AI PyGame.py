@@ -66,7 +66,7 @@ class NPC(Player):
         print(f"\n{self.name}'s turn! Strategy: {self.strategy}")
 
         # Выбивание двери
-        if random.random() < 0.7:  # 70% chance to kick down the door
+        if random.random() < 0.7:  
             if door_deck:
                 card = door_deck.pop(0)
                 print(f"{self.name} drew a {card.name}")
