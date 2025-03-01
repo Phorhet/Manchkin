@@ -4,24 +4,30 @@ import sys
 from openpyxl import load_workbook
 
 pygame.init()
+
 WIDTH, HEIGHT = 800, 600
 FPS = 60
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (17, 95, 17)
 RED = (255, 0, 0)
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Dungeon Card Game")
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 24)
 large_font = pygame.font.Font(None, 48)
+
 try:
     dungeon_bg1 = pygame.image.load("fon2.png")
     dungeon_bg2 = pygame.image.load("fon.png")
     table_image = pygame.image.load("fon_osn.png")
+    sword_image = pygame.image.load("sword.jpg").convert_alpha()
+    sword_image = pygame.transform.scale(sword_image, (200, 90))
 except pygame.error:
     print("Ошибка загрузки изображений!")
     sys.exit()
+
 def load_cards():
     try:
         workbook = load_workbook("Карты для манчкина.xlsx")
@@ -62,6 +68,8 @@ class Player:
     def heal(self):
         heal_amount = random.randint(10, 30)
         self.health += heal_amount
+        if self.health > 100:
+            self.health = 100
         return heal_amount
 
     def use_item(self, item_name):
@@ -123,7 +131,7 @@ def wait_for_key():
                 return
 
 def show_item_menu(player):
-    screen.blit(table_image, (0, 0))
+    screen.fill(WHITE)
     draw_text("Выберите предмет для использования:", 20, 20, font, BLACK)
     items = [
         "Баклер бахвала",
@@ -181,7 +189,7 @@ def monster_battle(player, opponent):
                 if event.key == pygame.K_1:
                     damage = random.randint(10, 30)
                     opponent.health -= damage
-                    draw_text(f"Вы нанесли {damage} урона!", 20, 200, font, RED)
+                    draw_text(f"Вы нанесли {damage} урона!", 250, 200, font, RED)
                     pygame.display.flip()
                     pygame.time.delay(2000)
                     return True
@@ -198,25 +206,47 @@ def monster_battle(player, opponent):
                         pygame.display.flip()
                         pygame.time.delay(2000)
                         return False
-                elif event.key == pygame.K_3:  # Сбежать
+                elif event.key == pygame.K_3:
                     if random.random() < 0.5:
                         draw_text("Вы успешно сбежали!", 250, 200, font, GREEN)
                         pygame.display.flip()
                         pygame.time.delay(2000)
                         return False
                     else:
-                        draw_text("Вы не смогли сбежать и проиграли!", 20, 200, font, RED)
+                        draw_text("Вы не смогли сбежать и проиграли!", 250, 200, font, RED)
                         pygame.display.flip()
                         pygame.time.delay(2000)
                         return False
 
-def draw_menu():
-    screen.blit(dungeon_bg1, (0, 0))
-    draw_text("MANCHKIN", WIDTH // 2 - 150, HEIGHT // 4, pygame.font.Font(None, 100), (20, 180, 100))
-    draw_text("1. Начать игру", WIDTH // 2 - 100, HEIGHT // 2, pygame.font.Font(None, 48), BLACK)
-    draw_text("2. Правила", WIDTH // 2 - 100, HEIGHT // 2 + 50, pygame.font.Font(None, 48), BLACK)
-    draw_text("3. Выход", WIDTH // 2 - 100, HEIGHT // 2 + 100, pygame.font.Font(None, 48), BLACK)
-    pygame.display.flip()
+def swing_sword_animation():
+    angle = 0
+    angle_speed = 4
+    swing_range = 90
+    swinging_up = True
+    running = True
+    clock = pygame.time.Clock()
+
+    while running:
+        screen.fill(WHITE)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        if swinging_up:
+            angle += angle_speed
+            if angle >= swing_range:
+                swinging_up = False
+        else:
+            angle -= angle_speed
+            if angle <= -swing_range:
+                running = False
+
+        rotated_sword = pygame.transform.rotate(sword_image, -angle)
+        sword_rect = rotated_sword.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        screen.blit(rotated_sword, sword_rect.topleft)
+        pygame.display.flip()
+        clock.tick(60)
 
 def pause_menu():
     paused = True
@@ -236,13 +266,23 @@ def pause_menu():
                 elif event.key == pygame.K_2:
                     main_menu()
 
+def draw_menu():
+    screen.blit(dungeon_bg1, (0, 0))
+    draw_text("MANCHKIN", WIDTH // 2 - 150, HEIGHT // 4, pygame.font.Font(None, 100), (20, 180, 100))
+    draw_text("1. Начать игру", WIDTH // 2 - 100, HEIGHT // 2, pygame.font.Font(None, 48), BLACK)
+    draw_text("2. Правила", WIDTH // 2 - 100, HEIGHT // 2 + 50, pygame.font.Font(None, 48), BLACK)
+    draw_text("3. Выход", WIDTH // 2 - 100, HEIGHT // 2 + 100, pygame.font.Font(None, 48), BLACK)
+    pygame.display.flip()
+
 def game_loop():
     game = Game()
     running = True
+
     while running:
         screen.blit(dungeon_bg1, (0, 0))
         player = game.get_current_player()
         opponent = game.get_opponent()
+
         draw_text(f"{player.name} - Уровень: {player.level}, Здоровье: {player.health}", 20, 20, font)
         draw_text(f"{opponent.name} - Уровень: {opponent.level}, Здоровье: {opponent.health}", 20, 50, font)
         draw_text("1. Выбрать монстра", 20, 100, font)
@@ -251,12 +291,15 @@ def game_loop():
         draw_text("4. Сражение с монстром", 20, 190, font)
         draw_text("P. Пауза", 20, 220, font)
         pygame.display.flip()
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
                     pause_menu()
+
                 if event.key == pygame.K_1:
                     card = player.draw_card(game.deck)
                     if card:
@@ -286,14 +329,15 @@ def game_loop():
                 elif event.key == pygame.K_4:
                     if monster_battle(player, opponent):
                         player.level += 1
-                        draw_text(f"Вы победили! Ваш уровень: {player.level}", 250, 250, font, GREEN)
+                        swing_sword_animation()
+                        draw_text(f"Вы победили! Ваш уровень: {player.level}", 20, 250, font, GREEN)
                         if player.level >= 10:
                             draw_text(f"{player.name} выиграл игру!", WIDTH // 2 - 100, HEIGHT // 2, large_font, GREEN)
                             pygame.display.flip()
                             pygame.time.delay(2000)
                             running = False
                     else:
-                        draw_text("Вы проиграли битву!", 250, 250, font, RED)
+                        draw_text("Вы проиграли битву!", 20, 250, font, RED)
                     pygame.display.flip()
                     pygame.time.delay(1000)
 
